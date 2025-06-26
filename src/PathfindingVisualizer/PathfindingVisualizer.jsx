@@ -17,7 +17,25 @@ const MODES = {
   NONE: 'none',
   START: 'start',
   END: 'end',
-  WALL: 'wall'
+  WALL: 'wall',
+  WEIGHT: 'weight'
+};
+
+// Speed constants
+const SPEEDS = {
+  SLOW: { name: 'Slow', visitDelay: 50, pathDelay: 150, icon: '🐢' },
+  MEDIUM: { name: 'Medium', visitDelay: 20, pathDelay: 80, icon: '🚶' },
+  FAST: { name: 'Fast', visitDelay: 5, pathDelay: 30, icon: '🏃' },
+  LIGHTNING: { name: 'Lightning', visitDelay: 1, pathDelay: 10, icon: '⚡' }
+};
+
+// Weight constants
+const WEIGHTS = {
+  1: { value: 1, color: '#e8f5e8', display: '1', name: 'Light' },
+  2: { value: 2, color: '#fff3cd', display: '2', name: 'Medium' },
+  3: { value: 3, color: '#ffeaa7', display: '3', name: 'Heavy' },
+  4: { value: 4, color: '#fdcb6e', display: '4', name: 'Very Heavy' },
+  5: { value: 5, color: '#e17055', display: '5', name: 'Extreme' }
 };
 
 export default class PathfindingVisualizer extends Component {
@@ -28,6 +46,8 @@ export default class PathfindingVisualizer extends Component {
       mouseIsPressed: false,
       isRunning: false,
       currentMode: MODES.NONE,
+      currentSpeed: SPEEDS.MEDIUM,
+      currentWeight: WEIGHTS[1],
       startNodeRow: START_NODE_ROW,
       startNodeCol: START_NODE_COL,
       finishNodeRow: FINISH_NODE_ROW,
@@ -38,6 +58,20 @@ export default class PathfindingVisualizer extends Component {
   componentDidMount() {
     const grid = getInitialGrid();
     this.setState({ grid });
+  }
+
+  // Speed selection method
+  setSpeed(speed) {
+    if (!this.state.isRunning) {
+      this.setState({ currentSpeed: speed });
+    }
+  }
+
+  // Weight selection method
+  setWeight(weight) {
+    if (!this.state.isRunning) {
+      this.setState({ currentWeight: weight });
+    }
   }
 
   // Mode selection methods
@@ -66,6 +100,10 @@ export default class PathfindingVisualizer extends Component {
           break;
         case MODES.WALL:
           this.toggleWall(row, col);
+          this.setState({ mouseIsPressed: true });
+          break;
+        case MODES.WEIGHT:
+          this.setNodeWeight(row, col);
           this.setState({ mouseIsPressed: true });
           break;
         default:
@@ -156,6 +194,38 @@ export default class PathfindingVisualizer extends Component {
     });
   }
 
+  setNodeWeight(row, col) {
+    const { grid, currentWeight } = this.state;
+    const node = grid[row][col];
+    
+    // Don't place weights on walls, start, or finish nodes
+    if (node.isWall || node.isStart || node.isFinish) return;
+
+    // Toggle weight - if same weight, remove it (set to 1), otherwise set new weight
+    const newWeight = node.weight === currentWeight.value ? 1 : currentWeight.value;
+    
+    const newGrid = grid.slice();
+    const newNode = {
+      ...node,
+      weight: newWeight,
+    };
+    newGrid[row][col] = newNode;
+
+    // Update visual representation
+    const nodeElement = document.getElementById(`node-${row}-${col}`);
+    if (newWeight === 1) {
+      nodeElement.className = 'node';
+      nodeElement.style.backgroundColor = '';
+      nodeElement.textContent = '';
+    } else {
+      nodeElement.className = 'node node-weight';
+      nodeElement.style.backgroundColor = WEIGHTS[newWeight].color;
+      nodeElement.textContent = WEIGHTS[newWeight].display;
+    }
+
+    this.setState({ grid: newGrid });
+  }
+
   toggleWall(row, col) {
     const { grid } = this.state;
     const node = grid[row][col];
@@ -164,6 +234,15 @@ export default class PathfindingVisualizer extends Component {
     if (node.isStart || node.isFinish) return;
 
     const newGrid = getNewGridWithWallToggled(grid, row, col);
+    
+    // If we're removing a wall, also reset weight to 1
+    if (node.isWall) {
+      const nodeElement = document.getElementById(`node-${row}-${col}`);
+      newGrid[row][col].weight = 1;
+      nodeElement.style.backgroundColor = '';
+      nodeElement.textContent = '';
+    }
+    
     this.setState({ grid: newGrid });
   }
 
@@ -173,6 +252,8 @@ export default class PathfindingVisualizer extends Component {
       
       if (currentMode === MODES.WALL) {
         this.toggleWall(row, col);
+      } else if (currentMode === MODES.WEIGHT) {
+        this.setNodeWeight(row, col);
       } else if (currentMode === MODES.START) {
         this.placeStartNode(row, col);
       } else if (currentMode === MODES.END) {
@@ -220,7 +301,10 @@ export default class PathfindingVisualizer extends Component {
             nodeElement.className !== 'node node-finish'
           ) {
             nodeElement.className = 'node';
+            nodeElement.style.backgroundColor = '';
+            nodeElement.textContent = '';
             node.isWall = false;
+            node.weight = 1;
           }
           // Reset all algorithm-specific properties for all nodes
           node.isVisited = false;
@@ -248,7 +332,32 @@ export default class PathfindingVisualizer extends Component {
           );
           if (nodeElement.className === 'node node-wall') {
             nodeElement.className = 'node';
+            nodeElement.style.backgroundColor = '';
+            nodeElement.textContent = '';
             node.isWall = false;
+            node.weight = 1;
+          }
+        }
+      }
+      this.setState({ grid: newGrid });
+    }
+  }
+
+  clearWeights() {
+    if (!this.state.isRunning) {
+      const newGrid = this.state.grid.slice();
+      for (const row of newGrid) {
+        for (const node of row) {
+          if (node.weight > 1) {
+            let nodeElement = document.getElementById(
+              `node-${node.row}-${node.col}`,
+            );
+            if (!node.isWall && !node.isStart && !node.isFinish) {
+              nodeElement.className = 'node';
+              nodeElement.style.backgroundColor = '';
+              nodeElement.textContent = '';
+            }
+            node.weight = 1;
           }
         }
       }
@@ -328,11 +437,14 @@ export default class PathfindingVisualizer extends Component {
   }
 
   animateAlgorithm(visitedNodesInOrder, finishNode, algo) {
+    const { currentSpeed } = this.state;
+    const delay = currentSpeed.visitDelay;
+    
     for (let i = 0; i <= visitedNodesInOrder.length; i++) {
       if (i === visitedNodesInOrder.length) {
         setTimeout(() => {
           this.animateShortestPath(finishNode, algo);
-        }, 10 * i);
+        }, delay * i);
         return;
       }
       setTimeout(() => {
@@ -341,11 +453,14 @@ export default class PathfindingVisualizer extends Component {
         if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
           nodeElement.className = 'node node-visited';
         }
-      }, 10 * i);
+      }, delay * i);
     }
   }
 
   animateShortestPath(finishNode, algo) {
+    const { currentSpeed } = this.state;
+    const delay = currentSpeed.pathDelay;
+    
     let nodesInShortestPathOrder;
     switch (algo) {
       case 'Dijkstra':
@@ -370,7 +485,7 @@ export default class PathfindingVisualizer extends Component {
         if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
           nodeElement.className = 'node node-shortest-path';
         }
-      }, 50 * i);
+      }, delay * i);
     }
     this.toggleIsRunning();
   }
@@ -380,7 +495,7 @@ export default class PathfindingVisualizer extends Component {
   }
 
   render() {
-    const { grid, mouseIsPressed, currentMode, isRunning } = this.state;
+    const { grid, mouseIsPressed, currentMode, currentSpeed, currentWeight, isRunning } = this.state;
     
     return (
       <>
@@ -425,6 +540,55 @@ export default class PathfindingVisualizer extends Component {
               >
                 ⬛ Wall
               </button>
+              <button
+                type="button"
+                className={`mode-btn ${currentMode === MODES.WEIGHT ? 'active' : ''}`}
+                onClick={() => this.setMode(MODES.WEIGHT)}
+                disabled={isRunning}
+              >
+                ⚖️ Weight
+              </button>
+            </div>
+          </div>
+
+          {/* Weight Selection - Only show when in weight mode */}
+          {currentMode === MODES.WEIGHT && (
+            <div className="weight-selection">
+              <h3>Weight Value:</h3>
+              <div className="weight-buttons">
+                {Object.entries(WEIGHTS).map(([key, weight]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    className={`weight-btn ${currentWeight === weight ? 'active' : ''}`}
+                    onClick={() => this.setWeight(weight)}
+                    disabled={isRunning}
+                    style={{ backgroundColor: weight.color }}
+                    title={`${weight.name} (${weight.value})`}
+                  >
+                    {weight.display}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Speed Selection */}
+          <div className="speed-selection">
+            <h3>Animation Speed:</h3>
+            <div className="speed-buttons">
+              {Object.entries(SPEEDS).map(([key, speed]) => (
+                <button
+                  key={key}
+                  type="button"
+                  className={`speed-btn ${currentSpeed === speed ? 'active' : ''}`}
+                  onClick={() => this.setSpeed(speed)}
+                  disabled={isRunning}
+                  title={`${speed.name} Speed`}
+                >
+                  {speed.icon} {speed.name}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -485,6 +649,14 @@ export default class PathfindingVisualizer extends Component {
             <button
               type="button"
               className="btn control-btn"
+              onClick={() => this.clearWeights()}
+              disabled={isRunning}
+            >
+              Clear Weights
+            </button>
+            <button
+              type="button"
+              className="btn control-btn"
               onClick={() => this.resetGrid()}
               disabled={isRunning}
             >
@@ -500,6 +672,8 @@ export default class PathfindingVisualizer extends Component {
             {currentMode === MODES.START && "🟢 Click on any square to place the start node"}
             {currentMode === MODES.END && "🔴 Click on any square to place the end node"}
             {currentMode === MODES.WALL && "⬛ Click on squares to toggle walls on/off"}
+            {currentMode === MODES.WEIGHT && `⚖️ Click on squares to add weight ${currentWeight.display} (${currentWeight.name})`}
+            {isRunning && `🎬 Running algorithm at ${currentSpeed.name.toLowerCase()} speed...`}
           </p>
         </div>
 
@@ -508,7 +682,7 @@ export default class PathfindingVisualizer extends Component {
             return (
               <div key={rowIdx} className="grid-row">
                 {row.map((node, nodeIdx) => {
-                  const { row, col, isFinish, isStart, isWall } = node;
+                  const { row, col, isFinish, isStart, isWall, weight } = node;
                   return (
                     <Node
                       key={nodeIdx}
@@ -516,6 +690,7 @@ export default class PathfindingVisualizer extends Component {
                       isFinish={isFinish}
                       isStart={isStart}
                       isWall={isWall}
+                      weight={weight}
                       mouseIsPressed={mouseIsPressed}
                       onMouseDown={(row, col) => this.handleMouseDown(row, col)}
                       onMouseEnter={(row, col) =>
@@ -543,6 +718,10 @@ export default class PathfindingVisualizer extends Component {
           <div className="legend-item">
             <div className="node node-wall"></div>
             <span>Wall Node</span>
+          </div>
+          <div className="legend-item">
+            <div className="node node-weight" style={{ backgroundColor: '#fff3cd' }}>2</div>
+            <span>Weight Node</span>
           </div>
           <div className="legend-item">
             <div className="node node-visited"></div>
@@ -579,6 +758,7 @@ const createNode = (col, row) => {
     distance: Infinity,
     isVisited: false,
     isWall: false,
+    weight: 1,
     previousNode: null,
     // A* specific properties
     heuristicDistance: 0,

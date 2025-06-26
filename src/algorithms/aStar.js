@@ -50,7 +50,8 @@ function sortNodesByTotalDistance(unvisitedNodes) {
 function updateUnvisitedNeighbors(node, grid, finishNode) {
   const unvisitedNeighbors = getUnvisitedNeighbors(node, grid);
   for (const neighbor of unvisitedNeighbors) {
-    const tentativeDistance = node.distance + 1;
+    // Use the neighbor's weight for distance calculation
+    const tentativeDistance = node.distance + neighbor.weight;
     
     // Only update if we found a better path
     if (tentativeDistance < neighbor.distance) {

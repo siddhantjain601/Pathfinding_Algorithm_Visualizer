@@ -19,28 +19,28 @@
 }
 
 /* Mode Selection Section */
-.mode-selection {
+.mode-selection, .speed-selection, .weight-selection {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
 }
 
-.mode-selection h3 {
+.mode-selection h3, .speed-selection h3, .weight-selection h3 {
   margin: 0;
   font-size: 1.1rem;
   color: #e8f4fd;
   font-weight: 500;
 }
 
-.mode-buttons {
+.mode-buttons, .speed-buttons, .weight-buttons {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.mode-btn {
+.mode-btn, .speed-btn, .weight-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
@@ -54,24 +54,54 @@
   min-width: 80px;
 }
 
-.mode-btn:hover:not(:disabled) {
+.mode-btn:hover:not(:disabled), .speed-btn:hover:not(:disabled), .weight-btn:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.5);
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.mode-btn.active {
+.mode-btn.active, .speed-btn.active, .weight-btn.active {
   background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
   border-color: #4CAF50;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
-.mode-btn:disabled {
+.mode-btn:disabled, .speed-btn:disabled, .weight-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Speed-specific styling */
+.speed-btn {
+  min-width: 95px;
+  font-size: 13px;
+}
+
+.speed-btn.active {
+  animation: pulse-speed 2s infinite;
+}
+
+/* Weight-specific styling */
+.weight-btn {
+  min-width: 50px;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.weight-btn:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px) scale(1.1);
+}
+
+.weight-btn.active {
+  border-color: #4CAF50;
+  box-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+  color: #2c5234;
 }
 
 /* Button Groups */
@@ -209,14 +239,18 @@
     font-size: 1.8rem;
   }
   
-  .mode-buttons, .nav-buttons, .control-buttons {
+  .mode-buttons, .speed-buttons, .weight-buttons, .nav-buttons, .control-buttons {
     gap: 0.3rem;
   }
   
-  .btn, .mode-btn {
+  .btn, .mode-btn, .speed-btn, .weight-btn {
     padding: 8px 12px;
     font-size: 13px;
     min-width: 85px;
+  }
+
+  .weight-btn {
+    min-width: 45px;
   }
 }
 
@@ -230,14 +264,20 @@
     font-size: 1.6rem;
   }
 
-  .mode-selection h3 {
+  .mode-selection h3, .speed-selection h3, .weight-selection h3 {
     font-size: 1rem;
   }
 
-  .mode-buttons {
+  .mode-buttons, .speed-buttons {
     grid-template-columns: repeat(2, 1fr);
     display: grid;
     width: 100%;
+    max-width: 300px;
+  }
+
+  .weight-buttons {
+    display: flex;
+    justify-content: center;
     max-width: 300px;
   }
 
@@ -248,10 +288,16 @@
     max-width: 400px;
   }
 
-  .btn, .mode-btn {
+  .btn, .mode-btn, .speed-btn {
     padding: 10px 8px;
     font-size: 12px;
     min-width: 70px;
+  }
+
+  .weight-btn {
+    padding: 8px;
+    font-size: 14px;
+    min-width: 40px;
   }
 
   .instructions {
@@ -278,16 +324,28 @@
     font-size: 1.4rem;
   }
 
-  .mode-buttons, .nav-buttons, .control-buttons {
+  .mode-buttons, .speed-buttons, .nav-buttons, .control-buttons {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
 
-  .btn, .mode-btn {
+  .weight-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+  }
+
+  .btn, .mode-btn, .speed-btn {
     padding: 12px 16px;
     font-size: 14px;
     width: 100%;
     min-width: unset;
+  }
+
+  .weight-btn {
+    padding: 10px;
+    font-size: 14px;
+    min-width: 35px;
   }
 
   .instructions {
@@ -330,6 +388,18 @@
   }
   50% {
     box-shadow: 0 4px 16px rgba(76, 175, 80, 0.6);
+  }
+  100% {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  }
+}
+
+@keyframes pulse-speed {
+  0% {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(255, 193, 7, 0.6);
   }
   100% {
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
