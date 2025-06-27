@@ -458,37 +458,50 @@ export default class PathfindingVisualizer extends Component {
   }
 
   animateShortestPath(finishNode, algo) {
-    const { currentSpeed } = this.state;
-    const delay = currentSpeed.pathDelay;
-    
-    let nodesInShortestPathOrder;
-    switch (algo) {
-      case 'Dijkstra':
-        nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
-        break;
-      case 'AStar':
-        nodesInShortestPathOrder = getNodesInShortestPathOrderAStar(finishNode);
-        break;
-      case 'BFS':
-        nodesInShortestPathOrder = getNodesInShortestPathOrderBFS(finishNode);
-        break;
-      case 'DFS':
-        nodesInShortestPathOrder = getNodesInShortestPathOrderDFS(finishNode);
-        break;
-      default:
-        break;
-    }
-    for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
-      setTimeout(() => {
-        const node = nodesInShortestPathOrder[i];
-        const nodeElement = document.getElementById(`node-${node.row}-${node.col}`);
-        if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
-          nodeElement.className = 'node node-shortest-path';
-        }
-      }, delay * i);
-    }
-    this.toggleIsRunning();
+  const { currentSpeed } = this.state;
+  const delay = currentSpeed.pathDelay;
+
+  let nodesInShortestPathOrder;
+  switch (algo) {
+    case 'Dijkstra':
+      nodesInShortestPathOrder = getNodesInShortestPathOrder(finishNode);
+      break;
+    case 'AStar':
+      nodesInShortestPathOrder = getNodesInShortestPathOrderAStar(finishNode);
+      break;
+    case 'BFS':
+      nodesInShortestPathOrder = getNodesInShortestPathOrderBFS(finishNode);
+      break;
+    case 'DFS':
+      nodesInShortestPathOrder = getNodesInShortestPathOrderDFS(finishNode);
+      break;
+    default:
+      break;
   }
+
+  for (let i = 0; i < nodesInShortestPathOrder.length; i++) {
+    setTimeout(() => {
+      const node = nodesInShortestPathOrder[i];
+      const nodeElement = document.getElementById(`node-${node.row}-${node.col}`);
+      if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
+        // Replace class to highlight path
+        nodeElement.className = 'node node-shortest-path';
+        // Remove weight color
+        nodeElement.style.backgroundColor = '';
+        // Keep the weight number if it's > 1
+        if (node.weight > 1) {
+          nodeElement.textContent = node.weight;
+        } else {
+          nodeElement.textContent = '';
+        }
+      }
+    }, delay * i);
+  }
+
+  this.toggleIsRunning();
+}
+
+
 
   toggleIsRunning() {
     this.setState({ isRunning: !this.state.isRunning });
@@ -719,10 +732,18 @@ export default class PathfindingVisualizer extends Component {
             <div className="node node-wall"></div>
             <span>Wall Node</span>
           </div>
-          <div className="legend-item">
-            <div className="node node-weight" style={{ backgroundColor: '#fff3cd' }}>2</div>
-            <span>Weight Node</span>
-          </div>
+          {Object.entries(WEIGHTS).map(([key, weight]) => (
+  <div className="legend-item" key={key}>
+    <div
+      className="node node-weight"
+      style={{ backgroundColor: weight.color }}
+    >
+      {weight.display}
+    </div>
+    <span>Weight {weight.value}</span>
+  </div>
+))}
+
           <div className="legend-item">
             <div className="node node-visited"></div>
             <span>Visited Node</span>
