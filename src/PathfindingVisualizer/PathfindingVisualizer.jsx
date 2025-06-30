@@ -115,28 +115,14 @@ export default class PathfindingVisualizer extends Component {
   }
 
   handleDefaultMouseDown(row, col) {
-    const nodeElement = document.getElementById(`node-${row}-${col}`);
-    const nodeClass = nodeElement.className;
+  const newGrid = getNewGridWithWallToggled(this.state.grid, row, col);
+  this.setState({
+    grid: newGrid,
+    mouseIsPressed: true,
+    currentMode: MODES.WALL,
+  });
+}
 
-    if (nodeClass === 'node node-start') {
-      this.setState({
-        mouseIsPressed: true,
-        currentMode: MODES.START,
-      });
-    } else if (nodeClass === 'node node-finish') {
-      this.setState({
-        mouseIsPressed: true,
-        currentMode: MODES.END,
-      });
-    } else {
-      const newGrid = getNewGridWithWallToggled(this.state.grid, row, col);
-      this.setState({
-        grid: newGrid,
-        mouseIsPressed: true,
-        currentMode: MODES.WALL,
-      });
-    }
-  }
 
   placeStartNode(row, col) {
     const { grid, startNodeRow, startNodeCol } = this.state;
@@ -410,7 +396,7 @@ export default class PathfindingVisualizer extends Component {
   visualize(algo) {
     if (!this.state.isRunning) {
       this.clearPath();
-      this.toggleIsRunning();
+      //this.toggleIsRunning();
       const { grid, startNodeRow, startNodeCol, finishNodeRow, finishNodeCol } = this.state;
       const startNode = grid[startNodeRow][startNodeCol];
       const finishNode = grid[finishNodeRow][finishNodeCol];
@@ -435,29 +421,31 @@ export default class PathfindingVisualizer extends Component {
       this.animateAlgorithm(visitedNodesInOrder, finishNode, algo);
     }
   }
+animateAlgorithm(visitedNodesInOrder, finishNode, algo) {
+  this.setState({ isRunning: true });  // Lock buttons
 
-  animateAlgorithm(visitedNodesInOrder, finishNode, algo) {
-    const { currentSpeed } = this.state;
-    const delay = currentSpeed.visitDelay;
-    
-    for (let i = 0; i <= visitedNodesInOrder.length; i++) {
-      if (i === visitedNodesInOrder.length) {
-        setTimeout(() => {
-          this.animateShortestPath(finishNode, algo);
-        }, delay * i);
-        return;
-      }
+  const { currentSpeed } = this.state;
+  const delay = currentSpeed.visitDelay;
+
+  for (let i = 0; i <= visitedNodesInOrder.length; i++) {
+    if (i === visitedNodesInOrder.length) {
       setTimeout(() => {
-        const node = visitedNodesInOrder[i];
-        const nodeElement = document.getElementById(`node-${node.row}-${node.col}`);
-        if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
-          nodeElement.className = 'node node-visited';
-        }
+        this.animateShortestPath(finishNode, algo);
       }, delay * i);
+      return;
     }
+    setTimeout(() => {
+      const node = visitedNodesInOrder[i];
+      const nodeElement = document.getElementById(`node-${node.row}-${node.col}`);
+      if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
+        nodeElement.className = 'node node-visited';
+      }
+    }, delay * i);
   }
+}
 
-  animateShortestPath(finishNode, algo) {
+
+ animateShortestPath(finishNode, algo) {
   const { currentSpeed } = this.state;
   const delay = currentSpeed.pathDelay;
 
@@ -484,22 +472,21 @@ export default class PathfindingVisualizer extends Component {
       const node = nodesInShortestPathOrder[i];
       const nodeElement = document.getElementById(`node-${node.row}-${node.col}`);
       if (nodeElement.className !== 'node node-start' && nodeElement.className !== 'node node-finish') {
-        // Replace class to highlight path
         nodeElement.className = 'node node-shortest-path';
-        // Remove weight color
         nodeElement.style.backgroundColor = '';
-        // Keep the weight number if it's > 1
-        if (node.weight > 1) {
-          nodeElement.textContent = node.weight;
-        } else {
-          nodeElement.textContent = '';
-        }
+        nodeElement.textContent = node.weight > 1 ? node.weight : '';
+      }
+
+      // After last path node is done, unlock everything
+      if (i === nodesInShortestPathOrder.length - 1) {
+        this.setState({ isRunning: false });
       }
     }, delay * i);
   }
-
-  this.toggleIsRunning();
 }
+
+
+ 
 
 
 
@@ -521,14 +508,6 @@ export default class PathfindingVisualizer extends Component {
           <div className="mode-selection">
             <h3>Selection Mode:</h3>
             <div className="mode-buttons">
-              <button
-                type="button"
-                className={`mode-btn ${currentMode === MODES.NONE ? 'active' : ''}`}
-                onClick={() => this.setMode(MODES.NONE)}
-                disabled={isRunning}
-              >
-                🖱️ Move
-              </button>
               <button
                 type="button"
                 className={`mode-btn ${currentMode === MODES.START ? 'active' : ''}`}
