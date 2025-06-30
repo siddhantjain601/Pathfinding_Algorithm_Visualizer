@@ -660,7 +660,6 @@ animateAlgorithm(visitedNodesInOrder, finishNode, algo) {
         {/* Instructions */}
         <div className="instructions">
           <p>
-            {currentMode === MODES.NONE && "🖱️ Drag nodes to move them, or click and drag to create walls"}
             {currentMode === MODES.START && "🟢 Click on any square to place the start node"}
             {currentMode === MODES.END && "🔴 Click on any square to place the end node"}
             {currentMode === MODES.WALL && "⬛ Click on squares to toggle walls on/off"}
